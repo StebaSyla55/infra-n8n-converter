@@ -1,0 +1,28 @@
+version: "3.9"
+
+services:
+  converter:
+    build: ./converter          # contient ton Dockerfile
+    image: converter:latest
+    volumes:
+      - /srv/shared:/data/shared:rw,exec
+    restart: unless-stopped
+
+  n8n:
+    image: n8nio/n8n:latest
+    environment:
+      - N8N_ENFORCE_SETTINGS_FILE_PERMISSIONS=true
+      - N8N_RUNNERS_ENABLED=true
+      - N8N_IMPORT_EXPORT_DIR=/data/shared/n8n-backup
+      - N8N_IMPORT_EXPORT_OVERWRITE=overwrite
+    entrypoint: >
+      /bin/sh -c "
+        n8n import:credentials --separate --input /data/shared/n8n-backup/credentials || true &&
+        n8n import:workflow    --separate --input /data/shared/n8n-backup/workflows || true &&
+        n8n start
+      "
+    volumes:
+      - /srv/shared:/data/shared:rw,exec
+    ports:
+      - "5678"      # exposé ensuite via Traefik par Coolify
+    restart: unless-stopped
