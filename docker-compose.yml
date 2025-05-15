@@ -1,8 +1,22 @@
 version: "3.9"
 
+volumes:
+  n8n_data:
+    driver: local
+    driver_opts:
+      type: none
+      o: bind
+      device: /srv/n8n_data          # persistance SQLite/config
+  n8n_backup:
+    driver: local
+    driver_opts:
+      type: none
+      o: bind
+      device: /srv/n8n_backup        # exports JSON + pg_dump
+
 services:
   converter:
-    build: ./converter          # contient ton Dockerfile
+    build: ./converter
     image: converter:latest
     volumes:
       - /srv/shared:/data/shared:rw,exec
@@ -11,19 +25,63 @@ services:
   n8n:
     image: n8nio/n8n:latest
     environment:
-      - GENERIC_TIMEZONE=${GENERIC_TIMEZONE:-Europe/Berlin}
+      # --- Connexion Postgres Supabase ---
+      - DB_TYPE=postgresdb
+      - DB_POSTGRESDB_HOST=${DB_POSTGRESDB_HOST}
+      - DB_POSTGRESDB_DATABASE=${DB_POSTGRESDB_DATABASE}
+      - DB_POSTGRESDB_PORT=${DB_POSTGRESDB_PORT}
+      - DB_POSTGRESDB_USER=${DB_POSTGRESDB_USER}
+      - DB_POSTGRESDB_PASSWORD=${DB_POSTGRESDB_PASSWORD}
+
+      # --- Sécurité / fuseaux ---
+      - N8N_ENCRYPTION_KEY=${N8N_ENCRYPTION_KEY}
+      - GENERIC_TIMEZONE=${GENERIC_TIMEZONE:-Europe/Paris}
       - N8N_ENFORCE_SETTINGS_FILE_PERMISSIONS=true
-      - N8N_RUNNERS_ENABLED=true
-      - N8N_IMPORT_EXPORT_DIR=/data/shared/n8n-backup
+
+      # --- Import automatique au 1ᵉʳ start ---
+      - N8N_IMPORT_EXPORT_DIR=/backup
       - N8N_IMPORT_EXPORT_OVERWRITE=overwrite
     entrypoint: >
       /bin/sh -c "
-        n8n import:credentials --separate --input /data/shared/n8n-backup/credentials || true &&
-        n8n import:workflow    --separate --input /data/shared/n8n-backup/workflows || true &&
+        n8n import:credentials --separate --input /backup/credentials || true &&
+        n8n import:workflow    --separate --input /backup/workflows   || true &&
         n8n start
       "
     volumes:
+      - n8n_backup:/backup:ro                      # d'abord en RO
       - /srv/shared:/data/shared:rw,exec
     ports:
-      - "5678"      # exposé ensuite via Traefik par Coolify
+      - "5678"          # exposé ensuite via Traefik/Coolify
     restart: unless-stopped
+    healthcheck:
+      test:
+        - CMD-SHELL
+        - 'wget -qO- http://127.0.0.1:5678/'
+      interval: 5s
+      timeout: 20s
+      retries: 10
+
+  n8n-backup:
+    image: n8nio/n8n:latest
+    user: "node"
+    depends_on: [n8n]
+    environment:
+      # réemploi des variables DB_* déjà déclarées dans l’UI
+      - DB_TYPE=postgresdb
+      - DB_POSTGRESDB_HOST=${DB_POSTGRESDB_HOST}
+      - DB_POSTGRESDB_DATABASE=${DB_POSTGRESDB_DATABASE}
+      - DB_POSTGRESDB_PORT=${DB_POSTGRESDB_PORT}
+      - DB_POSTGRESDB_USER=${DB_POSTGRESDB_USER}
+      - DB_POSTGRESDB_PASSWORD=${DB_POSTGRESDB_PASSWORD}
+    volumes:
+      - n8n_backup:/backup
+    entrypoint: >
+      /bin/sh -c '
+        while true; do
+          n8n export:workflow    --backup --output /backup/workflows   &&
+          n8n export:credentials --backup --output /backup/credentials &&
+          pg_dump --dbname=postgresql://${DB_POSTGRESDB_USER}:${DB_POSTGRESDB_PASSWORD}@${DB_POSTGRESDB_HOST}:${DB_POSTGRESDB_PORT}/${DB_POSTGRESDB_DATABASE} \
+                  --file=/backup/pgdump/n8n-$(date +%F-%H%M).sql &&
+          sleep 300;
+        done
+      '
