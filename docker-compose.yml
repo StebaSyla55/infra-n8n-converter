@@ -48,8 +48,9 @@ services:
         n8n start
       "
     volumes:
-      - n8n_backup:/backup:ro                      # d'abord en RO
+      - /srv/n8n_backup:/backup:rw                     
       - /srv/shared:/data/shared:rw,exec
+      - /srv/n8n_data:/home/node/.n8n:rw,exec
     ports:
       - "5678"          # exposé ensuite via Traefik/Coolify
     restart: unless-stopped
@@ -74,7 +75,8 @@ services:
       - DB_POSTGRESDB_USER=${DB_POSTGRESDB_USER}
       - DB_POSTGRESDB_PASSWORD=${DB_POSTGRESDB_PASSWORD}
     volumes:
-      - n8n_backup:/backup
+      - /srv/n8n_backup:/backup
+      - /srv/n8n_data:/home/node/.n8n:rw,exec
     entrypoint: >
       /bin/sh -c '
         while true; do
