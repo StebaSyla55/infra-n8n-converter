@@ -61,7 +61,7 @@ services:
       - DB_POSTGRESDB_USER=${DB_POSTGRESDB_USER}
       - DB_POSTGRESDB_PASSWORD=${DB_POSTGRESDB_PASSWORD}
     volumes:
-      - /srv/n8n_backup:/backup
+      - /srv/n8n_backup:/backup:rw,exec
       - /srv/n8n_data:/home/node/.n8n:rw,exec
     entrypoint: >
       /bin/sh -c '
