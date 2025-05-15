@@ -1,19 +1,5 @@
 version: "3.9"
 
-volumes:
-  n8n_data:
-    driver: local
-    driver_opts:
-      type: none
-      o: bind
-      device: /srv/n8n_data          # persistance SQLite/config
-  n8n_backup:
-    driver: local
-    driver_opts:
-      type: none
-      o: bind
-      device: /srv/n8n_backup        # exports JSON + pg_dump
-
 services:
   converter:
     build: ./converter
