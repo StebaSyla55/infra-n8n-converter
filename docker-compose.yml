@@ -23,6 +23,7 @@ services:
       - N8N_ENCRYPTION_KEY=${N8N_ENCRYPTION_KEY}
       - GENERIC_TIMEZONE=${GENERIC_TIMEZONE:-Europe/Paris}
       - N8N_ENFORCE_SETTINGS_FILE_PERMISSIONS=true
+      - N8N_RUNNERS_ENABLED='true'
 
       # --- Import automatique au 1ᵉʳ start ---
       - N8N_IMPORT_EXPORT_DIR=/backup
