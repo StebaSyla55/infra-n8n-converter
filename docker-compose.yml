@@ -2,6 +2,7 @@ version: "3.9"
 
 services:
   converter:
+    container_name: converter
     build: ./converter
     image: converter:latest
     volumes:
@@ -9,6 +10,7 @@ services:
     restart: unless-stopped
 
   n8n:
+    container_name: n8n
     image: n8nio/n8n:latest
     environment:
       # --- Connexion Postgres Supabase ---
