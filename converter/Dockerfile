@@ -25,10 +25,10 @@ RUN apt-get update \
 # ─── 2) Outils CLI & bibliothèques Python ──────────────────────────────────
 RUN npm install -g docxtemplater-cli@latest \
  && pip3 install --no-cache-dir --break-system-packages \
-        docxtpl \            # génération DOCX existante
-        fastapi \            # micro-service HTTP
-        uvicorn[standard] \  # serveur ASGI
-        python-multipart \   # gestion fichier upload
+        docxtpl \
+        fastapi \
+        "uvicorn[standard]" \
+        python-multipart \
  && rm -rf /var/lib/apt/lists/*
 
 # ─── 3) Code API FastAPI ───────────────────────────────────────────────────
