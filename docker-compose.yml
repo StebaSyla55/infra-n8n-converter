@@ -8,6 +8,8 @@ services:
     volumes:
       - /srv/shared:/data/shared:rw,exec
     restart: unless-stopped
+    environment:
+      - API_KEY=${CONVERTER_API_KEY}
 
   n8n:
     container_name: n8n
@@ -30,6 +32,7 @@ services:
       # --- Import automatique au 1ᵉʳ start ---
       - N8N_IMPORT_EXPORT_DIR=/backup
       - N8N_IMPORT_EXPORT_OVERWRITE=overwrite
+      - CONVERTER_API_KEY=${CONVERTER_API_KEY}
     entrypoint: >
       /bin/sh -c "
         n8n import:credentials --separate --input /backup/credentials || true &&
