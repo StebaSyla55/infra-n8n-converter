@@ -43,5 +43,5 @@ VOLUME ["/data/shared"]
 # ─── 5) Lancement du service ───────────────────────────────────────────────
 WORKDIR /app
 EXPOSE 8000
-CMD CMD ["uvicorn", "api:app", "--host", "0.0.0.0", "--port", "8000"]
+CMD ["uvicorn", "api:app", "--host", "0.0.0.0", "--port", "8000"]
 
